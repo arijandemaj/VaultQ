@@ -20,5 +20,16 @@ namespace VaultQ.CLI.Helpers
             }
         }
 
+        public static bool ValidatePassword(string password)
+        {
+            if(password.Length < 6)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+
     }
 }

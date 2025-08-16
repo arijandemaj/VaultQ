@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "VaultQ.CLI": {
+      "commandName": "Project",
+      "commandLineArgs": "setup"
+    }
+  }
+}

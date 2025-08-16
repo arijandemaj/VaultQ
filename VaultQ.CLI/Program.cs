@@ -9,7 +9,7 @@ using VaultQ.CLI.Commands;
 namespace VaultQ.CLI
 {
     [Command(Name = "vaultq", Description = "VaultQ CLI Tool")]
-    [Subcommand(typeof(GetCommand))]
+    [Subcommand(typeof(SetupCommand), typeof(GetCommand))]
     class Program
     {
         public static void Main(string[] args) 
