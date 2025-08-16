@@ -9,7 +9,7 @@ namespace VaultQ.Core.Models
     internal class Vault
     {
         public required string Name { get; set; }
-        public required string DerivedKey { get; set; }
+        
         public Dictionary<string, string>? Data { get; set; }
 
     }

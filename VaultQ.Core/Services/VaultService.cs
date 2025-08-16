@@ -10,6 +10,7 @@ namespace VaultQ.Core.Services
     {
         public bool SetupVault(string vaultName, string vaultPassword)
         {
+            // TODO:
             // Derive the key from password
             // Create in memory object 
             // encrypt it with derived key
