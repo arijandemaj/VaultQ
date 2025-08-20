@@ -5,11 +5,12 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using VaultQ.Core.Interfaces;
 using VaultQ.Core.Models;
 
 namespace VaultQ.Core.Services
 {
-    internal class FileService
+    public class FileService : IFileService
     {
         private string AppDataPath 
         {
