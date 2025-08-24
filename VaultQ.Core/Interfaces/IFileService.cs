@@ -11,6 +11,6 @@ namespace VaultQ.Core.Interfaces
     {
         byte[] SerializeVault(Vault vault);
         Vault LoadDefaultVault();
-        bool SaveToFile(byte[] serializedFile, string fileName);
+        void SaveSetup(byte[] serializedFile, string fileName);
     }
 }

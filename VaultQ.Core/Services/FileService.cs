@@ -107,31 +107,50 @@ namespace VaultQ.Core.Services
          
         }
 
-        public bool SaveToFile(byte[] serializedFile, string fileName)
+        public void SaveSetup(byte[] serializedFile, string fileName)
         {
-            // TODO: Catch Errors
-            if (!Directory.Exists(VaultDirectoryPath))
+            try
             {
-                Directory.CreateDirectory(VaultDirectoryPath);
+                if (!Directory.Exists(VaultDirectoryPath))
+                {
+                    Directory.CreateDirectory(VaultDirectoryPath);
+                }
+
+                // Saving Vault 
+                string fullPath = Path.Combine(VaultDirectoryPath, fileName);
+                File.WriteAllBytes(fullPath, serializedFile);
+
+                // Saving Vault Config
+                var configObject = new
+                {
+                    DefaultVaultName = fileName
+                };
+
+                var options = new JsonSerializerOptions
+                {
+                    WriteIndented = true
+                };
+
+                string configJson = JsonSerializer.Serialize(configObject, options);
+                File.WriteAllText(VaultConfigPath, configJson);
+
+
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                throw new InvalidOperationException("Access denied while saving vault files.", ex);
+            }
+            catch (IOException ex)
+            {
+                throw new InvalidOperationException("I/O error while saving vault files.", ex);
+            }
+            catch (JsonException ex)
+            {
+                throw new InvalidOperationException("Failed to serialize vault config.", ex);
             }
 
-            var configObject = new
-            {
-                DefaultVaultName = fileName
-            };
 
-            var options = new JsonSerializerOptions
-            {
-                WriteIndented = true
-            };
 
-            string configJson = JsonSerializer.Serialize(configObject, options);
-            File.WriteAllText(VaultConfigPath, configJson);
-
-            string fullPath = Path.Combine(VaultDirectoryPath, fileName);
-            File.WriteAllBytes(fullPath, serializedFile);
-
-            return true;
         }
 
     }
