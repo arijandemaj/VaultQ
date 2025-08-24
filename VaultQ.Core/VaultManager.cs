@@ -25,7 +25,7 @@ namespace VaultQ.Core
             return new VaultManager(new EncryptionService(), new FileService());
         }
 
-        public void SetupVault(string vaultName, string vaultPassword)
+        public async Task SetupVault(string vaultName, char[] vaultPassword)
         {
             try
             {
@@ -38,7 +38,7 @@ namespace VaultQ.Core
                 byte[] serializedVault = fileService.SerializeVault(vaultCreation);
                 byte[] encryptedVault = encryptionService.EncryptVault(serializedVault, vaultPassword);
 
-                fileService.SaveSetup(encryptedVault, vaultName + ".dat");
+                await fileService.SaveSetup(encryptedVault, vaultName + ".dat");
             }
             catch (Exception ex)
             {
@@ -47,17 +47,26 @@ namespace VaultQ.Core
             }
         }
 
-        public bool IsSetupDone()
+        public async Task<bool> IsSetupDone()
         {
             try
             {
-                return fileService.DefaultVaultExists();
+                bool setupDone = await fileService.GetDefaultVaultName() != null;
+                return setupDone;
             }
             catch(Exception ex)
             {
                 // TODO: Add custom exceptions
                 throw new Exception("Something Went Wrong!");
             }
+        }
+
+        private async Task<Vault> GetVault(string vaultName, char[] vaultPassword)
+        {
+            var vaultBytes = await fileService.GetVaultBytes(vaultName);
+            var decryptBytes = encryptionService.DecryptVault(vaultBytes, vaultPassword);
+            Vault vault = fileService.DeserializeVault(decryptBytes);
+            return vault;
         }
 
     }

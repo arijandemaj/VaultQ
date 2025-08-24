@@ -8,16 +8,47 @@ namespace VaultQ.CLI.Helpers
 {
     internal static class PasswordHelper
     {
-        public static void PromptPassword()
+        public static char[] PromptPassword(string text = "password: ")
         {
-            Console.Write("passwod: ");
+            char[] passwordArrayTemp = new char[128];
+            int length = 0;
 
-            string? typedPassword = Console.ReadLine();
-
-            if (string.IsNullOrEmpty(typedPassword)) 
+            Console.Write(text);
+            ConsoleKeyInfo consoleKeyInfo;
+            while (true)
             {
-                throw new Exception("Wrong Password");
+                consoleKeyInfo = Console.ReadKey(intercept: true);
+
+                if (consoleKeyInfo.Key == ConsoleKey.Enter)
+                {
+                    Console.WriteLine();
+                    break;
+                }
+                else if(consoleKeyInfo.Key == ConsoleKey.Backspace)
+                {
+                    if (length > 0)
+                    {
+                        length--;
+                        Console.Write("\b \b");
+                    }
+                }
+                else
+                {
+                    passwordArrayTemp[length++] = consoleKeyInfo.KeyChar;
+                    Console.Write("*");
+                }
+
             }
+
+            char[] password = new char[length];
+            for (int i = 0; i < length; i++)
+            {
+                password[i] = passwordArrayTemp[i];
+            }
+
+            Array.Clear(passwordArrayTemp, 0, passwordArrayTemp.Length);
+
+            return password;
         }
 
         public static bool ValidatePassword(string password)

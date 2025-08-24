@@ -13,7 +13,14 @@ namespace VaultQ.CLI.Commands
     [Command(Name =  "setup", Description = "Setup the vault")]
     internal class SetupCommand
     {
-        private void OnExecute(IConsole console)
+        private readonly VaultManager vaultManager;
+
+        public SetupCommand()
+        {
+            vaultManager = VaultManager.CreateDefault();
+        }
+
+        private async Task OnExecute(IConsole console)
         {
             Console.Write("Vault Name (leave blank for default): ");
             string? vaultName = Console.ReadLine();
@@ -21,53 +28,57 @@ namespace VaultQ.CLI.Commands
             if (string.IsNullOrEmpty(vaultName))
                 vaultName = "Default";
 
-            string? password = null;
-            string? confirmPassword = null;
+            char[]? password = null;
+            char[]? confirmPassword = null;
              
             while (true) 
             {
-                if (string.IsNullOrEmpty(password))
+                if (password == null)
                 {
-                    Console.Write("Vault Password: ");
-                    string? passwordInput = Console.ReadLine();
 
-                    if (string.IsNullOrEmpty(passwordInput))
+                    char[]? passwordInput = PasswordHelper.PromptPassword("Vault Password: ");
+
+                    if (passwordInput.Length == 0)
                     {
                         Console.WriteLine("Password can not be empty, try again!");
                         continue;
                     }
 
-                    if (!PasswordHelper.ValidatePassword(passwordInput))
-                    {
-                        Console.WriteLine("Password should be minimum 6 length characters");
-                        continue;
-                    }
+                    //if (!PasswordHelper.ValidatePassword(passwordInput))
+                    //{
+                    //    Console.WriteLine("Password should be minimum 6 length characters");
+                    //    continue;
+                    //}
 
-                    password = passwordInput;
+                    password = new char[passwordInput.Length];
+                    Array.Copy(passwordInput, password, passwordInput.Length);
+                    Array.Clear(passwordInput, 0, passwordInput.Length);
 
                 }
 
-                if (string.IsNullOrEmpty(confirmPassword))
+                if (confirmPassword == null)
                 {
-                    Console.Write("Confirm Vault Password: ");
-                    string? confirmPasswordInput = Console.ReadLine();
 
-                    if (string.IsNullOrEmpty(confirmPasswordInput))
+                    char[]? confirmPasswordInput = PasswordHelper.PromptPassword("Confirm Vault Password: ");
+
+                    if (confirmPasswordInput.Length == 0)
                     {
                         Console.WriteLine("Confirm password can not be empty, try again!");
                         continue;
                     }
 
-                    if (!PasswordHelper.ValidatePassword(confirmPasswordInput))
-                    {
-                        Console.WriteLine("Password should be minimum 6 length characters");
-                        continue;
-                    }
+                    //if (!PasswordHelper.ValidatePassword(confirmPasswordInput))
+                    //{
+                    //    Console.WriteLine("Password should be minimum 6 length characters");
+                    //    continue;
+                    //}
 
-                    confirmPassword = confirmPasswordInput;
+                    confirmPassword = new char[confirmPasswordInput.Length];
+                    Array.Copy(confirmPasswordInput, confirmPassword, confirmPasswordInput.Length);
+                    Array.Clear(confirmPasswordInput, 0, confirmPasswordInput.Length);
                 }
 
-                if (!string.Equals(password, confirmPassword))
+                if (!password.SequenceEqual(confirmPassword))
                 {
                     Console.WriteLine("Password Don't match try again");
 
@@ -77,22 +88,25 @@ namespace VaultQ.CLI.Commands
                     continue;
                 }
 
+                Array.Clear(confirmPassword, 0, confirmPassword.Length);
                 break;
 
             }
 
             try
             {
-                var vaultManager = VaultManager.CreateDefault();
-                vaultManager.SetupVault(vaultName, password);
-               
+                await vaultManager.SetupVault(vaultName, password);
             }
             catch(Exception ex)
             {
                 Console.WriteLine("Something went wrong!");
             }
+            finally
+            {
+                Array.Clear(password, 0, password.Length);
+            }
 
-            Console.WriteLine("Vault Created Successfuly!");
+            Console.WriteLine("\r\nVault Created Successfuly!\r\n");
      
            
 

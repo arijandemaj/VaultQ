@@ -8,6 +8,6 @@ namespace VaultQ.CLI.Helpers
 {
     public static class SetupHelper
     {
-        
+       
     }
 }

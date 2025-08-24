@@ -10,8 +10,9 @@ namespace VaultQ.Core.Interfaces
     internal interface IFileService
     {
         byte[] SerializeVault(Vault vault);
-        Vault LoadDefaultVault();
-        void SaveSetup(byte[] serializedFile, string fileName);
-        bool DefaultVaultExists();
+        Vault DeserializeVault(byte[] vaultBytes);
+        Task<byte[]> GetVaultBytes(string vaultName);
+        Task SaveSetup(byte[] serializedFile, string fileName);
+        Task<string?> GetDefaultVaultName();
     }
 }

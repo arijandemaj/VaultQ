@@ -8,8 +8,8 @@ namespace VaultQ.Core.Interfaces
 {
     internal interface IEncryptionService
     {
-        byte[] EncryptVault(byte[] vaultBytes, string password);
-        byte[] DecryptVault(byte[] vaultBytes, string password);
+        byte[] EncryptVault(byte[] vaultBytes, char[] password);
+        byte[] DecryptVault(byte[] vaultBytes, char[] password);
 
     }
 }

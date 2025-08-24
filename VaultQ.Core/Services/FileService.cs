@@ -50,24 +50,76 @@ namespace VaultQ.Core.Services
     
         }
 
-        public bool DefaultVaultExists()
+        public Vault DeserializeVault(byte[] vaultBytes)
         {
             try
             {
-                var json = File.ReadAllText(VaultConfigPath);
-                using var parsedJson = JsonDocument.Parse(json);
+                var vault = MessagePackSerializer.Deserialize<Vault>(vaultBytes);
 
-                if (!parsedJson.RootElement.TryGetProperty("DefaultVaultName", out var defaultVaultProp))
-                    return false;
+                if (vault == null)
+                    throw new InvalidOperationException();
 
-                if (defaultVaultProp.ValueKind != JsonValueKind.String)
-                    return false;
+                return vault;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Failed to deserialize vault file", ex);
+            }
+        }
 
-                return !string.IsNullOrWhiteSpace(defaultVaultProp.GetString());
+        public async Task<byte[]> GetVaultBytes(string vaultName)
+        {
+            if (!File.Exists(VaultConfigPath))
+                throw new FileNotFoundException("Config file not found");
+
+            var json = await File.ReadAllTextAsync(VaultConfigPath);
+            var configFile = JsonSerializer.Deserialize<VaultConfigFile>(json) ?? throw new InvalidOperationException("Config file is null");
+            var vault = configFile.Vaults?.FirstOrDefault(x => x.VaultName == vaultName) ?? throw new InvalidOperationException("Vault is null");
+
+
+            if (string.IsNullOrWhiteSpace(vault.VaultName))
+                throw new InvalidOperationException("Vault name is empty");
+
+            string vaultPath = Path.Combine(VaultDirectoryPath, vault.VaultName);
+
+            if (!File.Exists(vaultPath))
+                throw new FileNotFoundException("Vault file does not exist");
+
+            try
+            {
+                var vaultBytes = await File.ReadAllBytesAsync(vaultPath);
+                return vaultBytes;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Failed to load vault file", ex);
+            }
+
+        }
+
+        public async Task<string?> GetDefaultVaultName()
+        {
+            if (!File.Exists(VaultConfigPath))
+                throw new FileNotFoundException("Config file not found");
+
+            try
+            {
+                var json = await File.ReadAllTextAsync(VaultConfigPath);
+                var configFile = JsonSerializer.Deserialize<VaultConfigFile>(json);
+
+                if (configFile == null)
+                    return null;
+
+                var defaultVault = configFile.Vaults.FirstOrDefault(x => x.DefaultVault == true);
+
+                if (defaultVault == null || string.IsNullOrWhiteSpace(defaultVault.VaultName))
+                    return null;
+
+                return defaultVault.VaultName;
             }
             catch (FileNotFoundException)
             {
-                return false;
+                return null;
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -79,63 +131,7 @@ namespace VaultQ.Core.Services
             }
         }
      
-        public Vault LoadDefaultVault()
-        {
-            if (!File.Exists(VaultConfigPath))
-                throw new FileNotFoundException("Config file not found");
-
-
-            string? defaultVaultName;
-
-            try
-            {
-                string configJson = File.ReadAllText(VaultConfigPath);
-
-                using (var config = JsonDocument.Parse(configJson))
-                {
-                    var defaultVaultProperty = config.RootElement.GetProperty("DefaultVault");
-
-                    if(defaultVaultProperty.ValueKind == JsonValueKind.Null || defaultVaultProperty.ValueKind == JsonValueKind.String)
-                    {
-                        throw new InvalidOperationException("Invalid or missing DefaultVault in config.json");
-                    }
-
-                    defaultVaultName = defaultVaultProperty.GetString();
-
-                }
-
-            }
-            catch(Exception ex)
-            {
-                throw new InvalidOperationException("Failed to read config file", ex);
-            }
-
-            if (string.IsNullOrEmpty(defaultVaultName))
-                throw new InvalidOperationException("Default vault name is empty");
-
-            string defaultVaultPath = Path.Combine(VaultDirectoryPath, defaultVaultName);
-
-            if (!File.Exists(defaultVaultPath))
-                throw new FileNotFoundException($"Vault file not found at {defaultVaultPath}");
-
-            try
-            {
-                var vaultBytes = File.ReadAllBytes(defaultVaultPath);
-                var vault = MessagePackSerializer.Deserialize<Vault>(vaultBytes);
-
-                if (vault == null)
-                    throw new InvalidOperationException("Failed to deserialize vault");
-
-                return vault;
-            }
-            catch (Exception ex) 
-            {
-                throw new InvalidOperationException("Failed to load vault file", ex);
-            }
-         
-        }
-
-        public void SaveSetup(byte[] serializedFile, string fileName)
+        public async Task SaveSetup(byte[] serializedFile, string fileName)
         {
             try
             {
@@ -146,22 +142,22 @@ namespace VaultQ.Core.Services
 
                 // Saving Vault 
                 string fullPath = Path.Combine(VaultDirectoryPath, fileName);
-                File.WriteAllBytes(fullPath, serializedFile);
+                await File.WriteAllBytesAsync(fullPath, serializedFile);
 
                 // Saving Vault Config
-                var configObject = new
+                var vaultConfigFile = new VaultConfigFile();
+                vaultConfigFile.Vaults.Add(new VaultConfig
                 {
-                    DefaultVaultName = fileName
-                };
+                    VaultName = fileName,
+                    DefaultVault = true
+                });
 
-                var options = new JsonSerializerOptions
+                string configJson = JsonSerializer.Serialize(vaultConfigFile, new JsonSerializerOptions
                 {
                     WriteIndented = true
-                };
+                });
 
-                string configJson = JsonSerializer.Serialize(configObject, options);
-                File.WriteAllText(VaultConfigPath, configJson);
-
+                await File.WriteAllTextAsync(VaultConfigPath, configJson);
 
             }
             catch (UnauthorizedAccessException ex)

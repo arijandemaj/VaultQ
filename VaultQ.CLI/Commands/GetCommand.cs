@@ -22,15 +22,17 @@ namespace VaultQ.CLI.Commands
                 return;
             }
 
-            //try
-            //{
-            //    Password.PromptPassword();
-            //}
-            //catch (Exception)
-            //{
-            //    return;
-            //}
-            
+            try
+            {
+                var password = PasswordHelper.PromptPassword();
+
+                var s = "";
+            }
+            catch (Exception)
+            {
+                return;
+            }
+
 
             console.WriteLine($"Getting key: {Key}");
             // Add your logic here
