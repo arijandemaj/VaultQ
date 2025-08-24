@@ -80,8 +80,19 @@ namespace VaultQ.CLI.Commands
 
             }
 
-            var vaultService = new VaultService();
-            vaultService.SetupVault(vaultName, password);
+            try
+            {
+                var vaultService = VaultService.CreateDefault();
+                vaultService.SetupVault(vaultName, password);
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine("Something went wrong!");
+            }
+
+            Console.WriteLine("Vault Created Successfuly!");
+     
+           
 
         }
 
