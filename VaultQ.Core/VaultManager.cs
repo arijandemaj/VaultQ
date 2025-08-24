@@ -38,7 +38,7 @@ namespace VaultQ.Core
                 byte[] serializedVault = fileService.SerializeVault(vaultCreation);
                 byte[] encryptedVault = encryptionService.EncryptVault(serializedVault, vaultPassword);
 
-                fileService.SaveToFile(encryptedVault, vaultName + ".dat");
+                fileService.SaveSetup(encryptedVault, vaultName + ".dat");
             }
             catch (Exception ex)
             {
