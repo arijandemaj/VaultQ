@@ -50,6 +50,34 @@ namespace VaultQ.Core.Services
     
         }
 
+        public bool DefaultVaultExists()
+        {
+            try
+            {
+                var json = File.ReadAllText(VaultConfigPath);
+                using var parsedJson = JsonDocument.Parse(json);
+
+                if (!parsedJson.RootElement.TryGetProperty("DefaultVaultName", out var defaultVaultProp))
+                    return false;
+
+                if (defaultVaultProp.ValueKind != JsonValueKind.String)
+                    return false;
+
+                return !string.IsNullOrWhiteSpace(defaultVaultProp.GetString());
+            }
+            catch (FileNotFoundException)
+            {
+                return false;
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                throw new InvalidOperationException("Access denied while getting config file.", ex);
+            }
+            catch (JsonException ex)
+            {
+                throw new InvalidOperationException("Failed to deserialize vault config.", ex);
+            }
+        }
      
         public Vault LoadDefaultVault()
         {

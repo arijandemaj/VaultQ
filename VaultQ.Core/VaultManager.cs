@@ -42,8 +42,23 @@ namespace VaultQ.Core
             }
             catch (Exception ex)
             {
+                // TODO: Add custom exceptions
                 throw new Exception("Something Went Wrong!");
             }
         }
+
+        public bool IsSetupDone()
+        {
+            try
+            {
+                return fileService.DefaultVaultExists();
+            }
+            catch(Exception ex)
+            {
+                // TODO: Add custom exceptions
+                throw new Exception("Something Went Wrong!");
+            }
+        }
+
     }
 }
