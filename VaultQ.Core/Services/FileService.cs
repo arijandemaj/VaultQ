@@ -10,7 +10,7 @@ using VaultQ.Core.Models;
 
 namespace VaultQ.Core.Services
 {
-    public class FileService : IFileService
+    internal class FileService : IFileService
     {
         private string AppDataPath 
         {
@@ -50,6 +50,7 @@ namespace VaultQ.Core.Services
     
         }
 
+     
         public Vault LoadDefaultVault()
         {
             if (!File.Exists(VaultConfigPath))

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using VaultQ.CLI.Helpers;
+using VaultQ.Core;
 using VaultQ.Core.Services;
 
 namespace VaultQ.CLI.Commands
@@ -82,8 +83,9 @@ namespace VaultQ.CLI.Commands
 
             try
             {
-                var vaultService = VaultService.CreateDefault();
-                vaultService.SetupVault(vaultName, password);
+                var vaultManager = VaultManager.CreateDefault();
+                vaultManager.SetupVault(vaultName, password);
+               
             }
             catch(Exception ex)
             {

@@ -10,7 +10,7 @@ using VaultQ.Core.Models;
 
 namespace VaultQ.Core.Services
 {
-    public class EncryptionService : IEncryptionService
+    internal class EncryptionService : IEncryptionService
     {
         private const int saltSize = 16; // 128 bits Salt
         private const int keySize = 32; // 256 bits key 

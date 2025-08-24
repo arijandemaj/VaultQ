@@ -6,7 +6,8 @@ using System.Threading.Tasks;
 
 namespace VaultQ.CLI.Helpers
 {
-    internal class SetupHelper
+    public static class SetupHelper
     {
+        
     }
 }

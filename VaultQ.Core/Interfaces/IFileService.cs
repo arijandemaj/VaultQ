@@ -7,7 +7,7 @@ using VaultQ.Core.Models;
 
 namespace VaultQ.Core.Interfaces
 {
-    public interface IFileService
+    internal interface IFileService
     {
         byte[] SerializeVault(Vault vault);
         Vault LoadDefaultVault();

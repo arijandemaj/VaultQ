@@ -7,8 +7,8 @@ using System.Threading.Tasks;
 
 namespace VaultQ.Core.Models
 {
-    [MessagePackObject]
-    public class Vault
+    [MessagePackObject(AllowPrivate = true)]
+    internal class Vault
     {
         [Key(0)]
         public required string Name { get; set; }

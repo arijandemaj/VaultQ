@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace VaultQ.Core.Interfaces
 {
-    public interface IEncryptionService
+    internal interface IEncryptionService
     {
         byte[] EncryptVault(byte[] vaultBytes, string password);
         byte[] DecryptVault(byte[] vaultBytes, string password);
