@@ -61,6 +61,32 @@ namespace VaultQ.Core
             }
         }
 
+        public async Task AddSecret(string key, string value, char[] password, string? vaultName = null)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(vaultName))
+                    vaultName = await fileService.GetDefaultVaultName() ?? throw new Exception();
+
+                var vault = await GetVault(vaultName, password);
+
+                vault.Data ??= [];
+
+                vault.Data.Add(key, value);
+
+                byte[] serializedVault = fileService.SerializeVault(vault);
+                byte[] encryptedVault = encryptionService.EncryptVault(serializedVault, password);
+
+                await fileService.SaveVault(encryptedVault, vaultName);
+            }
+            catch (Exception)
+            {
+                // TODO: Add custom exceptions
+                throw new Exception("Something Went Wrong!");
+            }
+        }
+
+
         private async Task<Vault> GetVault(string vaultName, char[] vaultPassword)
         {
             var vaultBytes = await fileService.GetVaultBytes(vaultName);

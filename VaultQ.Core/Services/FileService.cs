@@ -19,7 +19,6 @@ namespace VaultQ.Core.Services
                 return Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
             }
         }
-
         private string VaultDirectoryPath
         {
             get
@@ -27,7 +26,6 @@ namespace VaultQ.Core.Services
                 return Path.Combine(AppDataPath, "VaultQ");
             }
         }
-
         private string VaultConfigPath
         {
             get
@@ -35,7 +33,6 @@ namespace VaultQ.Core.Services
                 return Path.Combine(VaultDirectoryPath, "config.json");
             }
         }
-
         public byte[] SerializeVault(Vault vault)
         {
             try
@@ -49,7 +46,6 @@ namespace VaultQ.Core.Services
             }
     
         }
-
         public Vault DeserializeVault(byte[] vaultBytes)
         {
             try
@@ -66,7 +62,6 @@ namespace VaultQ.Core.Services
                 throw new InvalidOperationException("Failed to deserialize vault file", ex);
             }
         }
-
         public async Task<byte[]> GetVaultBytes(string vaultName)
         {
             if (!File.Exists(VaultConfigPath))
@@ -96,7 +91,6 @@ namespace VaultQ.Core.Services
             }
 
         }
-
         public async Task<string?> GetDefaultVaultName()
         {
             if (!File.Exists(VaultConfigPath))
@@ -130,7 +124,6 @@ namespace VaultQ.Core.Services
                 throw new InvalidOperationException("Failed to deserialize vault config.", ex);
             }
         }
-     
         public async Task SaveSetup(byte[] serializedFile, string fileName)
         {
             try
@@ -177,5 +170,28 @@ namespace VaultQ.Core.Services
 
         }
 
+        public async Task SaveVault(byte[] vaultBytes, string fileName)
+        {
+            try
+            {
+                if (!Directory.Exists(VaultDirectoryPath))
+                {
+                    Directory.CreateDirectory(VaultDirectoryPath);
+                }
+
+                string fullPath = Path.Combine(VaultDirectoryPath, fileName);
+                await File.WriteAllBytesAsync(fullPath, vaultBytes);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                throw new InvalidOperationException("Access denied while saving vault files.", ex);
+            }
+            catch (IOException ex)
+            {
+                throw new InvalidOperationException("I/O error while saving vault files.", ex);
+            }
+
+
+        }
     }
 }

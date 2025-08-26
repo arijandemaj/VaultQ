@@ -61,7 +61,6 @@ namespace VaultQ.Core.Services
             }
 
         }
-
         public byte[] DecryptVault(byte[] vaultBytes, char[] password)
         {
             byte[] salt = vaultBytes.Take(saltSize).ToArray();
