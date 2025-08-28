@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace VaultQ.Core.Enums
 {
-    internal class VaultHeaderSizes
+    internal class VaultHeaderInfo
     {
         public static int SaltSize 
         {
@@ -52,6 +52,14 @@ namespace VaultQ.Core.Enums
             get
             {
                 return 100_000;
+            }
+        }
+
+        public static string VaultChecker
+        {
+            get
+            {
+                return "VaultQCheck";
             }
         }
 

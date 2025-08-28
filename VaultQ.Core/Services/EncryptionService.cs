@@ -15,18 +15,18 @@ namespace VaultQ.Core.Services
     {
         public byte[] EncryptVault(byte[] vaultBytes, char[] password)
         {
-            byte[] salt = RandomNumberGenerator.GetBytes(VaultHeaderSizes.SaltSize);
-            byte[] iv = RandomNumberGenerator.GetBytes(VaultHeaderSizes.IVSize);
-            byte[] key = DeriveKeyFromPassword(password, salt, VaultHeaderSizes.IterationNumber);
+            byte[] salt = RandomNumberGenerator.GetBytes(VaultHeaderInfo.SaltSize);
+            byte[] iv = RandomNumberGenerator.GetBytes(VaultHeaderInfo.IVSize);
+            byte[] key = DeriveKeyFromPassword(password, salt, VaultHeaderInfo.IterationNumber);
             byte[] encryptedData = Encrypt(vaultBytes, key, iv);
 
-            byte[] encryptedCheckerBytes = Encrypt(Encoding.UTF8.GetBytes("VaultQCheck"), key, iv);
+            byte[] encryptedCheckerBytes = Encrypt(Encoding.UTF8.GetBytes(VaultHeaderInfo.VaultChecker), key, iv);
 
-            byte[] result = new byte[VaultHeaderSizes.HeaderSize + encryptedData.Length];
+            byte[] result = new byte[VaultHeaderInfo.HeaderSize + encryptedData.Length];
             Buffer.BlockCopy(salt, 0, result, 0, salt.Length);
             Buffer.BlockCopy(iv, 0, result, salt.Length, iv.Length);
             Buffer.BlockCopy(encryptedCheckerBytes, 0, result, salt.Length + iv.Length, encryptedCheckerBytes.Length);
-            Buffer.BlockCopy(encryptedData, 0, result, VaultHeaderSizes.HeaderSize, encryptedData.Length);
+            Buffer.BlockCopy(encryptedData, 0, result, VaultHeaderInfo.HeaderSize, encryptedData.Length);
 
 
             Array.Clear(salt, 0, salt.Length);
@@ -41,11 +41,11 @@ namespace VaultQ.Core.Services
 
         public byte[] DecryptVault(byte[] vaultBytes, char[] password)
         {
-            byte[] salt = vaultBytes.Take(VaultHeaderSizes.SaltSize).ToArray();
-            byte[] iv = vaultBytes.Skip(VaultHeaderSizes.SaltSize).Take(VaultHeaderSizes.IVSize).ToArray();
+            byte[] salt = vaultBytes.Take(VaultHeaderInfo.SaltSize).ToArray();
+            byte[] iv = vaultBytes.Skip(VaultHeaderInfo.SaltSize).Take(VaultHeaderInfo.IVSize).ToArray();
 
-            byte[] data = vaultBytes.Skip(VaultHeaderSizes.HeaderSize).ToArray();
-            byte[] derivedKey = DeriveKeyFromPassword(password, salt, VaultHeaderSizes.IterationNumber);
+            byte[] data = vaultBytes.Skip(VaultHeaderInfo.HeaderSize).ToArray();
+            byte[] derivedKey = DeriveKeyFromPassword(password, salt, VaultHeaderInfo.IterationNumber);
             byte[] decryptedVault = Decrypt(data, derivedKey, iv);
 
             Array.Clear(salt, 0, salt.Length);
@@ -57,12 +57,12 @@ namespace VaultQ.Core.Services
 
         public string DecryptChecker(byte[] vaultHeaders, char[] password)
         {
-            byte[] salt = vaultHeaders.Take(VaultHeaderSizes.SaltSize).ToArray();
-            byte[] iv = vaultHeaders.Skip(VaultHeaderSizes.SaltSize).Take(VaultHeaderSizes.IVSize).ToArray();
-            byte[] checker = vaultHeaders.Skip(VaultHeaderSizes.SaltSize + VaultHeaderSizes.IVSize)
-                                         .Take(VaultHeaderSizes.CheckerSize).ToArray();
+            byte[] salt = vaultHeaders.Take(VaultHeaderInfo.SaltSize).ToArray();
+            byte[] iv = vaultHeaders.Skip(VaultHeaderInfo.SaltSize).Take(VaultHeaderInfo.IVSize).ToArray();
+            byte[] checker = vaultHeaders.Skip(VaultHeaderInfo.SaltSize + VaultHeaderInfo.IVSize)
+                                         .Take(VaultHeaderInfo.CheckerSize).ToArray();
 
-            byte[] key = DeriveKeyFromPassword(password, salt, VaultHeaderSizes.IterationNumber);
+            byte[] key = DeriveKeyFromPassword(password, salt, VaultHeaderInfo.IterationNumber);
             byte[] decyptedBytes = Decrypt(checker, key, iv);
 
             string result = Encoding.UTF8.GetString(decyptedBytes);
@@ -81,7 +81,6 @@ namespace VaultQ.Core.Services
 
 
         // Helper Method
-
         private byte[] DeriveKeyFromPassword(char[] password, byte[] salt, int iterationNumber)
         {
             byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
@@ -89,7 +88,7 @@ namespace VaultQ.Core.Services
             using (var pbkdf2 = new Rfc2898DeriveBytes(passwordBytes, salt, iterationNumber, HashAlgorithmName.SHA256))
             {
                 Array.Clear(passwordBytes, 0, passwordBytes.Length);
-                return pbkdf2.GetBytes(VaultHeaderSizes.KeySize);
+                return pbkdf2.GetBytes(VaultHeaderInfo.KeySize);
             }
             
         }

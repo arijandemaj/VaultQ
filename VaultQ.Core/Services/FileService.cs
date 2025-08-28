@@ -183,7 +183,7 @@ namespace VaultQ.Core.Services
         {
             string vaultPath = await GetVaultPath(fileName);
 
-            byte[] bytes = new byte[VaultHeaderSizes.HeaderSize];
+            byte[] bytes = new byte[VaultHeaderInfo.HeaderSize];
             using(FileStream fs = new FileStream(vaultPath, FileMode.Open, FileAccess.Read))
             {
                 await fs.ReadAsync(bytes, 0, bytes.Length);
