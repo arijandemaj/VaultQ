@@ -10,6 +10,7 @@ namespace VaultQ.Core.Interfaces
     {
         byte[] EncryptVault(byte[] vaultBytes, char[] password);
         byte[] DecryptVault(byte[] vaultBytes, char[] password);
+        string DecryptChecker(byte[] vaultBytes, char[] password);
 
     }
 }

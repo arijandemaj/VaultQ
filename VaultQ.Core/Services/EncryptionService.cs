@@ -20,9 +20,12 @@ namespace VaultQ.Core.Services
             byte[] key = DeriveKeyFromPassword(password, salt, VaultHeaderSizes.IterationNumber);
             byte[] encryptedData = Encrypt(vaultBytes, key, iv);
 
+            byte[] encryptedCheckerBytes = Encrypt(Encoding.UTF8.GetBytes("VaultQCheck"), key, iv);
+
             byte[] result = new byte[VaultHeaderSizes.HeaderSize + encryptedData.Length];
             Buffer.BlockCopy(salt, 0, result, 0, salt.Length);
             Buffer.BlockCopy(iv, 0, result, salt.Length, iv.Length);
+            Buffer.BlockCopy(encryptedCheckerBytes, 0, result, salt.Length + iv.Length, encryptedCheckerBytes.Length);
             Buffer.BlockCopy(encryptedData, 0, result, VaultHeaderSizes.HeaderSize, encryptedData.Length);
 
 
@@ -30,10 +33,12 @@ namespace VaultQ.Core.Services
             Array.Clear(iv, 0, iv.Length);
             Array.Clear(key, 0, key.Length);
             Array.Clear(encryptedData, 0, encryptedData.Length);
+            Array.Clear(encryptedCheckerBytes, 0, encryptedCheckerBytes.Length);
 
             return result;             
 
         }
+
         public byte[] DecryptVault(byte[] vaultBytes, char[] password)
         {
             byte[] salt = vaultBytes.Take(VaultHeaderSizes.SaltSize).ToArray();
@@ -49,6 +54,31 @@ namespace VaultQ.Core.Services
 
             return decryptedVault;
         }
+
+        public string DecryptChecker(byte[] vaultHeaders, char[] password)
+        {
+            byte[] salt = vaultHeaders.Take(VaultHeaderSizes.SaltSize).ToArray();
+            byte[] iv = vaultHeaders.Skip(VaultHeaderSizes.SaltSize).Take(VaultHeaderSizes.IVSize).ToArray();
+            byte[] checker = vaultHeaders.Skip(VaultHeaderSizes.SaltSize + VaultHeaderSizes.IVSize)
+                                         .Take(VaultHeaderSizes.CheckerSize).ToArray();
+
+            byte[] key = DeriveKeyFromPassword(password, salt, VaultHeaderSizes.IterationNumber);
+            byte[] decyptedBytes = Decrypt(checker, key, iv);
+
+            string result = Encoding.UTF8.GetString(decyptedBytes);
+
+            Array.Clear(salt, 0, salt.Length);
+            Array.Clear(iv, 0, iv.Length);
+            Array.Clear(checker, 0, checker.Length);
+            Array.Clear(key, 0, key.Length);
+            Array.Clear(decyptedBytes, 0, decyptedBytes.Length);
+
+            return result;
+
+        }
+
+
+
 
         // Helper Method
 
@@ -102,7 +132,6 @@ namespace VaultQ.Core.Services
             }
         }
 
-
-
+    
     }
 }

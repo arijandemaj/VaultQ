@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using VaultQ.Core.Enums;
 using VaultQ.Core.Interfaces;
 using VaultQ.Core.Models;
 
@@ -62,23 +63,9 @@ namespace VaultQ.Core.Services
                 throw new InvalidOperationException("Failed to deserialize vault file", ex);
             }
         }
-        public async Task<byte[]> GetVaultBytes(string vaultName)
+        public async Task<byte[]> GetVaultBytes(string? vaultName)
         {
-            if (!File.Exists(VaultConfigPath))
-                throw new FileNotFoundException("Config file not found");
-
-            var json = await File.ReadAllTextAsync(VaultConfigPath);
-            var configFile = JsonSerializer.Deserialize<VaultConfigFile>(json) ?? throw new InvalidOperationException("Config file is null");
-            var vault = configFile.Vaults?.FirstOrDefault(x => x.VaultName == vaultName) ?? throw new InvalidOperationException("Vault is null");
-
-
-            if (string.IsNullOrWhiteSpace(vault.VaultName))
-                throw new InvalidOperationException("Vault name is empty");
-
-            string vaultPath = Path.Combine(VaultDirectoryPath, vault.VaultName);
-
-            if (!File.Exists(vaultPath))
-                throw new FileNotFoundException("Vault file does not exist");
+            string vaultPath = await GetVaultPath(vaultName);
 
             try
             {
@@ -169,7 +156,6 @@ namespace VaultQ.Core.Services
 
 
         }
-
         public async Task SaveVault(byte[] vaultBytes, string fileName)
         {
             try
@@ -193,5 +179,43 @@ namespace VaultQ.Core.Services
 
 
         }
+        public async Task<byte[]> ReadVaultHeaders(string? fileName)
+        {
+            string vaultPath = await GetVaultPath(fileName);
+
+            byte[] bytes = new byte[VaultHeaderSizes.HeaderSize];
+            using(FileStream fs = new FileStream(vaultPath, FileMode.Open, FileAccess.Read))
+            {
+                await fs.ReadAsync(bytes, 0, bytes.Length);
+            }
+
+            return bytes;
+        }
+
+        // Helper Method
+        private async Task<string> GetVaultPath(string? vaultName)
+        {
+            // TODO: Handle Exceptions
+            if (!File.Exists(VaultConfigPath))
+                throw new FileNotFoundException("Config file not found");
+
+            if (string.IsNullOrWhiteSpace(vaultName))
+                vaultName = await GetDefaultVaultName();
+
+            var json = await File.ReadAllTextAsync(VaultConfigPath);
+            var configFile = JsonSerializer.Deserialize<VaultConfigFile>(json) ?? throw new InvalidOperationException("Config file is null");
+            var vault = configFile.Vaults?.FirstOrDefault(x => x.VaultName == vaultName) ?? throw new InvalidOperationException("Vault is null");
+
+            if (string.IsNullOrWhiteSpace(vault.VaultName))
+                throw new InvalidOperationException("Vault name is empty");
+
+            string vaultPath = Path.Combine(VaultDirectoryPath, vault.VaultName);
+
+            if (!File.Exists(vaultPath))
+                throw new FileNotFoundException("Vault file does not exist");
+
+            return vaultPath;
+        }
+
     }
 }

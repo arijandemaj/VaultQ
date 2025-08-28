@@ -19,7 +19,15 @@ namespace VaultQ.Core.Enums
         {
             get
             {
-                return 15; // 128-bit IV for AES 
+                return 16; // 128-bit IV for AES 
+            }
+        }
+
+        public static int CheckerSize
+        {
+            get
+            {
+                return 16; // 128-bit Checker for encryption => overkill
             }
         }
 
@@ -27,7 +35,7 @@ namespace VaultQ.Core.Enums
         {
             get
             {
-                return SaltSize + IVSize;
+                return SaltSize + IVSize + CheckerSize;
             }
         }
 

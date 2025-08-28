@@ -11,9 +11,10 @@ namespace VaultQ.Core.Interfaces
     {
         byte[] SerializeVault(Vault vault);
         Vault DeserializeVault(byte[] vaultBytes);
-        Task<byte[]> GetVaultBytes(string vaultName);
+        Task<byte[]> GetVaultBytes(string? vaultName);
         Task SaveSetup(byte[] serializedFile, string fileName);
         Task<string?> GetDefaultVaultName();
         Task SaveVault(byte[] vaultBytes, string fileName);
+        Task<byte[]> ReadVaultHeaders(string? fileName);
     }
 }
