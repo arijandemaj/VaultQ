@@ -77,7 +77,51 @@ namespace VaultQ.Core.Services
 
         }
 
+        public byte[] EncryptSecret(string keyValue, char[] secret)
+        {
+            byte[] salt = RandomNumberGenerator.GetBytes(VaultHeaderInfo.SaltSize);
+            byte[] iv = RandomNumberGenerator.GetBytes(VaultHeaderInfo.IVSize);
+            byte[] key = DeriveKeyFromPassword(secret, salt, VaultHeaderInfo.IterationNumber);
 
+            byte[] encryptedData = Encrypt(Encoding.UTF8.GetBytes(secret), key, iv);
+
+            byte[] result = new byte[VaultHeaderInfo.SecretHeaderSize + encryptedData.Length];
+            Buffer.BlockCopy(salt, 0, result, 0, salt.Length);
+            Buffer.BlockCopy(iv, 0, result, salt.Length, iv.Length);
+            Buffer.BlockCopy(encryptedData, 0, result, VaultHeaderInfo.SecretHeaderSize, encryptedData.Length);
+
+
+            Array.Clear(salt, 0, salt.Length);
+            Array.Clear(iv, 0, iv.Length);
+            Array.Clear(key, 0, key.Length);
+            Array.Clear(encryptedData, 0, encryptedData.Length);
+
+            return result;
+        }
+
+        public char[] DecryptSecret(byte[] secretBytes, string keyString)
+        {
+            byte[] salt = secretBytes.Take(VaultHeaderInfo.SaltSize).ToArray();
+            byte[] iv = secretBytes.Skip(VaultHeaderInfo.SaltSize).Take(VaultHeaderInfo.IVSize).ToArray();
+            byte[] data = secretBytes.Skip(VaultHeaderInfo.SecretHeaderSize).ToArray();
+
+            char[] passwordKey = keyString.ToCharArray();
+
+            byte[] key = DeriveKeyFromPassword(passwordKey, salt, VaultHeaderInfo.IterationNumber);
+
+            byte[] decyptedBytes = Decrypt(data, key, iv);
+            char[] result = Encoding.UTF8.GetChars(decyptedBytes);
+
+            Array.Clear(salt, 0, salt.Length);
+            Array.Clear(iv, 0, iv.Length);
+            Array.Clear(data, 0, data.Length);
+            Array.Clear(key, 0, key.Length);
+            Array.Clear(passwordKey, 0, passwordKey.Length);
+            Array.Clear(decyptedBytes, 0, decyptedBytes.Length);
+
+            return result;
+
+        }
 
 
         // Helper Method

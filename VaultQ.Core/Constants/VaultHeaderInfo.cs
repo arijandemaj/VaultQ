@@ -39,6 +39,15 @@ namespace VaultQ.Core.Enums
             }
         }
 
+        public static int SecretHeaderSize
+        {
+            get
+            {
+                return SaltSize + IVSize;
+            }
+        }
+
+
         public static int KeySize
         {
             get
