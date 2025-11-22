@@ -5,37 +5,44 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using VaultQ.CLI.Helpers;
+using VaultQ.Core;
 
 namespace VaultQ.CLI.Commands
 {
     [Command(Name = "get", Description = "Get a value by key")]
     internal class GetCommand
     {
+        private readonly VaultManager vaultManager;
+        public GetCommand(Program parent)
+        {
+            vaultManager = VaultManager.CreateDefault(parent.Vault);
+        }
+
         [Option("-k|--key <KEY>", Description = "Key to get", ShowInHelpText = true)]
         public string Key { get; set; }
 
-        private void OnExecute(IConsole console)
+        private async Task OnExecute(IConsole console)
         {
-            if (string.IsNullOrEmpty(Key))
+            var password = InputHelper.Input("password: ", true);
+
+            bool verifyPassword = await vaultManager.AuthenticateVault(password);
+
+            if (!verifyPassword)
             {
-                console.WriteLine("Error: Key is required.");
+                Console.WriteLine("Incorrect Password, Try Again!");
                 return;
             }
 
-            try
+            char[] retrivedSecret = vaultManager.GetSecret(Key);
+
+            Console.Write("\r\n");
+            for (int i = 0; i < retrivedSecret.Length; i++)
             {
-                var password = PasswordHelper.PromptPassword();
-
-                var s = "";
+                Console.Write(retrivedSecret[i]);
             }
-            catch (Exception)
-            {
-                return;
-            }
+            Console.Write("\r\n");
+            Array.Clear(retrivedSecret, 0, retrivedSecret.Length);
 
-
-            console.WriteLine($"Getting key: {Key}");
-            // Add your logic here
         }
     }
 }

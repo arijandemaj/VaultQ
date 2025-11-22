@@ -17,7 +17,7 @@ namespace VaultQ.CLI.Commands
 
         public SetupCommand()
         {
-            vaultManager = VaultManager.CreateDefault();
+            vaultManager = VaultManager.CreateDefault(null);
         }
 
         private async Task OnExecute(IConsole console)
@@ -36,19 +36,13 @@ namespace VaultQ.CLI.Commands
                 if (password == null)
                 {
 
-                    char[]? passwordInput = PasswordHelper.PromptPassword("Vault Password: ");
+                    char[]? passwordInput = InputHelper.Input("Vault Password: ", true);
 
                     if (passwordInput.Length == 0)
                     {
                         Console.WriteLine("Password can not be empty, try again!");
                         continue;
                     }
-
-                    //if (!PasswordHelper.ValidatePassword(passwordInput))
-                    //{
-                    //    Console.WriteLine("Password should be minimum 6 length characters");
-                    //    continue;
-                    //}
 
                     password = new char[passwordInput.Length];
                     Array.Copy(passwordInput, password, passwordInput.Length);
@@ -59,7 +53,7 @@ namespace VaultQ.CLI.Commands
                 if (confirmPassword == null)
                 {
 
-                    char[]? confirmPasswordInput = PasswordHelper.PromptPassword("Confirm Vault Password: ");
+                    char[]? confirmPasswordInput = InputHelper.Input("Confirm Vault Password: ", true);
 
                     if (confirmPasswordInput.Length == 0)
                     {
@@ -67,11 +61,6 @@ namespace VaultQ.CLI.Commands
                         continue;
                     }
 
-                    //if (!PasswordHelper.ValidatePassword(confirmPasswordInput))
-                    //{
-                    //    Console.WriteLine("Password should be minimum 6 length characters");
-                    //    continue;
-                    //}
 
                     confirmPassword = new char[confirmPasswordInput.Length];
                     Array.Copy(confirmPasswordInput, confirmPassword, confirmPasswordInput.Length);
@@ -107,7 +96,6 @@ namespace VaultQ.CLI.Commands
             }
 
             Console.WriteLine("\r\nVault Created Successfuly!\r\n");
-     
            
 
         }

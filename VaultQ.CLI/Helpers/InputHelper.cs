@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace VaultQ.CLI.Helpers
 {
-    internal static class PasswordHelper
+    internal static class InputHelper
     {
-        public static char[] PromptPassword(string text = "password: ")
+        public static char[] Input(string text, bool hide)
         {
             char[] passwordArrayTemp = new char[128];
             int length = 0;
@@ -35,7 +35,11 @@ namespace VaultQ.CLI.Helpers
                 else
                 {
                     passwordArrayTemp[length++] = consoleKeyInfo.KeyChar;
-                    Console.Write("*");
+
+                    if (hide == true)
+                        Console.Write("*");
+                    else
+                        Console.Write(consoleKeyInfo.KeyChar);
                 }
 
             }
@@ -51,15 +55,7 @@ namespace VaultQ.CLI.Helpers
             return password;
         }
 
-        public static bool ValidatePassword(string password)
-        {
-            if(password.Length < 6)
-            {
-                return false;
-            }
-
-            return true;
-        }
+ 
 
 
     }

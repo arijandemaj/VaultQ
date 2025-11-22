@@ -10,6 +10,12 @@ namespace VaultQ.Core.Models
     [MessagePackObject(AllowPrivate = true)]
     internal class Vault
     {
+        public Vault()
+        {
+            Name = "";
+            Data = new Dictionary<string, byte[]>();
+        }
+
         [Key(0)]
         public required string Name { get; set; }
         [Key(1)]

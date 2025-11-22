@@ -81,7 +81,7 @@ namespace VaultQ.Core.Services
         {
             byte[] salt = RandomNumberGenerator.GetBytes(VaultHeaderInfo.SaltSize);
             byte[] iv = RandomNumberGenerator.GetBytes(VaultHeaderInfo.IVSize);
-            byte[] key = DeriveKeyFromPassword(secret, salt, VaultHeaderInfo.IterationNumber);
+            byte[] key = DeriveKeyFromPassword(keyValue.ToCharArray(), salt, VaultHeaderInfo.IterationNumber);
 
             byte[] encryptedData = Encrypt(Encoding.UTF8.GetBytes(secret), key, iv);
 
