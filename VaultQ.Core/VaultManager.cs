@@ -14,187 +14,146 @@ namespace VaultQ.Core
 {
     public class VaultManager
     {
-        private readonly IEncryptionService encryptionService;
-        private readonly IFileService fileService;
-   
-        private Vault? Vault;
-        private char[] VaultPassword;
-        private string? VaultName;
-
-        private VaultManager(IEncryptionService encryptionService, IFileService fileService, string? vaultName)
+        private IEncryptionService _encryptionService;
+        private IFileService _fileService;
+        private VaultSession _vaultSession;
+ 
+        private VaultManager(IEncryptionService encryptionService, IFileService fileService)
         {
-            this.encryptionService = encryptionService;
-            this.fileService = fileService;
-            this.VaultName = vaultName;
+            _encryptionService = encryptionService ?? throw new ArgumentNullException(nameof(encryptionService));
+            _fileService = fileService ?? throw new ArgumentNullException(nameof(fileService));
         }
 
-        public static VaultManager CreateDefault(string? vaultName)
+        public static VaultManager CreateDefault()
         {
-            return new VaultManager(new EncryptionService(), new FileService(), vaultName);
+            return new VaultManager(new EncryptionService(), new FileService());
         }
 
-        public async Task SetupVault(string vaultName, char[] vaultPassword)
+        public async Task<bool> AuthenticateAsync(char[] vaultPassword, string? vaultName)
         {
-            try
+            if (vaultPassword.Length == 0)
+                return false;
+
+            if (string.IsNullOrEmpty(vaultName))
+                vaultName = await _fileService.GetDefaultVaultName() ?? throw new VaultQNotInitializedException();
+
+            byte[] derivedKey = _encryptionService.DeriveKeyFromPassword(vaultPassword);
+
+            var vaultHeaders = await _fileService.ReadVaultHeaders(vaultName);
+            var decryptChecker = _encryptionService.DecryptChecker(vaultHeaders, derivedKey);
+
+            bool isValid = decryptChecker == VaultHeaderInfo.VaultChecker;
+
+            if (!isValid)
             {
-                var vaultCreation = new Vault
-                {
-                    Name = vaultName,
-                    Data = new Dictionary<string, byte[]>()
-                };
-
-                byte[] serializedVault = fileService.SerializeVault(vaultCreation);
-                byte[] encryptedVault = encryptionService.EncryptVault(serializedVault, vaultPassword);
-
-                await fileService.SaveSetup(encryptedVault, vaultName + ".dat");
-            }
-            catch (Exception ex)
-            {
-                // TODO: Add custom exceptions
-                throw new Exception("Something Went Wrong!");
-            }
-        }
-
-        public async Task<bool> AuthenticateVault(char[] vaultPassword)
-        {
-            if (string.IsNullOrEmpty(this.VaultName))
-            {
-                VaultName = await fileService.GetDefaultVaultName() ?? throw new VaultQNotInitializedException();
-            }
-
-            if (!VaultName.EndsWith(".dat"))
-            {
-                VaultName += ".dat";
-            }
-
-            try
-            {
-                var vaultHeaders = await fileService.ReadVaultHeaders(this.VaultName);
-                var decryptChecker = encryptionService.DecryptChecker(vaultHeaders, vaultPassword);
-
-                bool isValid = decryptChecker == VaultHeaderInfo.VaultChecker;
-
-                if (!isValid)
-                    return false;
-
-                var vaultBytes = await fileService.GetVaultBytes(this.VaultName);
-                var decryptBytes = encryptionService.DecryptVault(vaultBytes, vaultPassword);
-                this.Vault = fileService.DeserializeVault(decryptBytes);
-                this.VaultPassword = vaultPassword;
-
-                return isValid;
-            }
-            catch
-            {
+                Array.Clear(derivedKey, 0, derivedKey.Length);
                 return false;
             }
+
+            var vaultBytes = await _fileService.GetVaultBytes(vaultName);
+            var decryptedVaultBytes = _encryptionService.DecryptVault(vaultBytes, derivedKey);
+            var vaultDeserialized = _fileService.DeserializeVault(decryptedVaultBytes);
+
+            _vaultSession = new VaultSession(vaultDeserialized, derivedKey);
+
+            Array.Clear(vaultBytes, 0, vaultBytes.Length);
+            Array.Clear(decryptedVaultBytes, 0, decryptedVaultBytes.Length);
+
+            return true;
         }
 
-        public async Task AddSecret(string key, char[] secret)
+        public async Task SetupVaultAsync(string vaultName, char[] vaultPassword)
         {
-            try
+            if (string.IsNullOrEmpty(vaultName) || vaultPassword.Length == 0)
+                return;
+
+            if (!vaultName.EndsWith(".dat"))
+                vaultName += ".dat";
+
+            var vaultCreation = new Vault
             {
-                var encryptedSecret = encryptionService.EncryptSecret(key, secret);
+                Name = vaultName,
+                Data = new Dictionary<string, byte[]>()
+            };
 
-                if (Vault == null || Vault.Data == null || string.IsNullOrEmpty(VaultName))
-                    return;
+            byte[] derivedKey = _encryptionService.DeriveKeyFromPassword(vaultPassword);
 
-                Vault.Data.Add(key, encryptedSecret);
+            byte[] serializedVault = _fileService.SerializeVault(vaultCreation);
+            byte[] encryptedVault = _encryptionService.EncryptVault(serializedVault, derivedKey);
 
-                var serializedVault = fileService.SerializeVault(Vault);
-                byte[] encryptedVault = encryptionService.EncryptVault(serializedVault, this.VaultPassword);
-                await fileService.SaveVault(encryptedVault, VaultName);
-            }
-            catch (Exception ex)
-            {
-                // TODO: Add custom exceptions
-                throw new Exception("Something Went Wrong!");
-            }
+            await _fileService.SaveSetup(encryptedVault, vaultName);
+
+            Array.Clear(derivedKey, 0, derivedKey.Length);
+            Array.Clear(serializedVault, 0, serializedVault.Length);
+            Array.Clear(encryptedVault, 0, encryptedVault.Length);
+        }
+
+        public async Task WriteSecretAsync(string key, char[] secret, bool overwrite)
+        {
+            if (string.IsNullOrEmpty(key) || secret.Length == 0)
+                return;
+
+            if (!_vaultSession.IsAuthenticated)
+                return;
+
+            var encryptedSecret = _encryptionService.EncryptSecret(key, secret);
+
+            if (overwrite)
+                _vaultSession.Vault.Data[key] = encryptedSecret;
+            else
+                _vaultSession.Vault.Data.Add(key, encryptedSecret);
+
+            Array.Clear(secret, 0, secret.Length);
+            await SaveVaultHelper();
+            _vaultSession.Clear();
 
         }
 
-        public async Task UpdateSecret(string key, char[] secret)
+        public async Task DeleteSecretAsync(string key)
         {
-            try
-            {
-                var encryptedSecret = encryptionService.EncryptSecret(key, secret);
+            if (!_vaultSession.IsAuthenticated)
+                return;
 
-                if (Vault == null || Vault.Data == null || string.IsNullOrEmpty(VaultName))
-                    return;
+            _vaultSession.Vault.Data.Remove(key);
 
-                Vault.Data[key] = encryptedSecret;
-
-                var serializedVault = fileService.SerializeVault(Vault);
-                byte[] encryptedVault = encryptionService.EncryptVault(serializedVault, this.VaultPassword);
-                await fileService.SaveVault(encryptedVault, VaultName);
-            }
-            catch (Exception ex)
-            {
-                // TODO: Add custom exceptions
-                throw new Exception("Something Went Wrong!");
-            }
-
+            await SaveVaultHelper();
+            _vaultSession.Clear();
         }
 
         public char[] GetSecret(string key)
         {
-            try
-            {
-                if (Vault == null || Vault.Data == null || string.IsNullOrEmpty(VaultName))
-                    return Array.Empty<char>();
+            if (string.IsNullOrEmpty(key) || !_vaultSession.IsAuthenticated)
+                return [];
 
-                byte[] secret = Vault.Data[key];
-                char[] decryptedSecret = encryptionService.DecryptSecret(secret, key);
+            if (_vaultSession.Vault.Data.TryGetValue(key, out var encryptedSecret) || encryptedSecret is null)
+                return [];
 
-                return decryptedSecret;
-            }
-            catch (Exception ex)
-            {
-                // TODO: Add custom exceptions
-                throw new Exception("Something Went Wrong!");
-            }
+            char[] decryptedSecret = _encryptionService.DecryptSecret(encryptedSecret, key);
 
-        }
-
-        public async Task DeleteSecret(string key)
-        {
-            try
-            {
-                if (Vault == null || Vault.Data == null || string.IsNullOrEmpty(VaultName))
-                    return;
-
-
-                Vault.Data.Remove(key);
-
-                var serializedVault = fileService.SerializeVault(Vault);
-                byte[] encryptedVault = encryptionService.EncryptVault(serializedVault, this.VaultPassword);
-                await fileService.SaveVault(encryptedVault, VaultName);
-
-            }
-            catch (Exception ex)
-            {
-                // TODO: Add custom exceptions
-                throw new Exception("Something Went Wrong!");
-            }
-
+            Array.Clear(encryptedSecret, 0, encryptedSecret.Length);
+            _vaultSession.Clear();
+            return decryptedSecret;
         }
 
         public string[] GetKeys()
         {
-            try
-            {
-                if (Vault == null || Vault.Data == null || string.IsNullOrEmpty(VaultName))
-                    return Array.Empty<string>();
+            if (!_vaultSession.IsAuthenticated)
+                return [];
 
-                var data = Vault.Data.Keys.ToArray();
-                return data;
-            }
-            catch (Exception ex)
-            {
-                // TODO: Add custom exceptions
-                throw new Exception("Something Went Wrong!");
-            }
+            var data = _vaultSession.Vault.Data.Keys.ToArray();
+            _vaultSession.Clear();
+            return data;
         }
+        
+        // Helper Methods
+        private async Task SaveVaultHelper()
+        {
+            byte[] serializedVault = _fileService.SerializeVault(_vaultSession.Vault);
+            byte[] encryptedVault = _encryptionService.EncryptVault(serializedVault, _vaultSession.DerivedKey);
+            await _fileService.SaveVault(encryptedVault, _vaultSession.Vault.Name);
 
+            Array.Clear(serializedVault, 0, serializedVault.Length);
+            Array.Clear(encryptedVault, 0, encryptedVault.Length);
+        }
     }
 }

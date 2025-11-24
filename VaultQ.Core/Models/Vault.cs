@@ -19,7 +19,7 @@ namespace VaultQ.Core.Models
         [Key(0)]
         public required string Name { get; set; }
         [Key(1)]
-        public Dictionary<string, byte[]>? Data { get; set; }
+        public required Dictionary<string, byte[]> Data { get; set; }
 
     }
 }
