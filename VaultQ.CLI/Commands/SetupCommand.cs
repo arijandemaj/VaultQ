@@ -14,10 +14,10 @@ namespace VaultQ.CLI.Commands
     internal class SetupCommand
     {
         private readonly VaultManager vaultManager;
-
+       
         public SetupCommand()
         {
-            vaultManager = VaultManager.CreateDefault(null);
+            vaultManager = VaultManager.CreateDefault();
         }
 
         private async Task OnExecute(IConsole console)
@@ -84,7 +84,7 @@ namespace VaultQ.CLI.Commands
 
             try
             {
-                await vaultManager.SetupVault(vaultName, password);
+                await vaultManager.SetupVaultAsync(vaultName, password);
             }
             catch(Exception ex)
             {

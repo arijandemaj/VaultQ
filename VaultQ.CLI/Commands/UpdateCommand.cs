@@ -13,10 +13,11 @@ namespace VaultQ.CLI.Commands
     internal class UpdateCommand
     {
         private readonly VaultManager vaultManager;
-
+        private readonly Program parent;
         public UpdateCommand(Program parent)
         {
-            vaultManager = VaultManager.CreateDefault(parent.Vault);
+            vaultManager = VaultManager.CreateDefault();
+            this.parent = parent;
         }
 
         [Option("-k|--key <KEY>", Description = "Key to get", ShowInHelpText = true)]
@@ -26,7 +27,7 @@ namespace VaultQ.CLI.Commands
         {
             var password = InputHelper.Input("password: ", true);
 
-            bool verifyPassword = await vaultManager.AuthenticateVault(password);
+            bool verifyPassword = await vaultManager.AuthenticateAsync(password, parent.Vault);
 
             if (!verifyPassword)
             {
@@ -37,7 +38,7 @@ namespace VaultQ.CLI.Commands
             var secret = InputHelper.Input("Secret: ", false);
 
             if (secret != null)
-                await vaultManager.UpdateSecret(Key, secret);
+                await vaultManager.WriteSecretAsync(Key, secret, true);
         }
     }
 }

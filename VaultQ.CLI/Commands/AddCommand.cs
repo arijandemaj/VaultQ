@@ -14,10 +14,12 @@ namespace VaultQ.CLI.Commands
     internal class AddCommand
     {
         private readonly VaultManager vaultManager;
-        
+        private readonly Program parent;
+
         public AddCommand(Program parent)
         {
-            vaultManager = VaultManager.CreateDefault(parent.Vault);
+            this.parent = parent;
+            vaultManager = VaultManager.CreateDefault();
         }
 
         [Option("-k|--key <KEY>", Description = "Key to get", ShowInHelpText = true)]
@@ -27,7 +29,7 @@ namespace VaultQ.CLI.Commands
         {
             var password = InputHelper.Input("password: ", true);
 
-            bool verifyPassword = await vaultManager.AuthenticateVault(password);
+            bool verifyPassword = await vaultManager.AuthenticateAsync(password, parent.Vault);
 
             if (!verifyPassword)
             {
@@ -38,7 +40,7 @@ namespace VaultQ.CLI.Commands
             var secret = InputHelper.Input("Secret: ", false);
 
             if (secret != null)
-                await vaultManager.AddSecret(Key, secret);
+                await vaultManager.WriteSecretAsync(Key, secret, false);
         }
     }
 }

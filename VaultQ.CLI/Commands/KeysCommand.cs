@@ -13,17 +13,19 @@ namespace VaultQ.CLI.Commands
     internal class KeysCommand
     {
         private readonly VaultManager vaultManager;
+        private readonly Program parent;
 
         public KeysCommand(Program parent)
         {
-            vaultManager = VaultManager.CreateDefault(parent.Vault);
+            vaultManager = VaultManager.CreateDefault();
+            this.parent = parent;
         }
 
         private async Task OnExecute(IConsole console)
         {
             var password = InputHelper.Input("password: ", true);
 
-            bool verifyPassword = await vaultManager.AuthenticateVault(password);
+            bool verifyPassword = await vaultManager.AuthenticateAsync(password, parent.Vault);
 
             if (!verifyPassword)
             {

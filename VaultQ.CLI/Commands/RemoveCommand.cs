@@ -13,10 +13,11 @@ namespace VaultQ.CLI.Commands
     internal class RemoveCommand
     {
         private readonly VaultManager vaultManager;
-
+        private readonly Program parent;
         public RemoveCommand(Program parent)
         {
-            vaultManager = VaultManager.CreateDefault(parent.Vault);
+            vaultManager = VaultManager.CreateDefault();
+            this.parent = parent;
         }
 
         [Option("-k|--key <KEY>", Description = "Key to get", ShowInHelpText = true)]
@@ -26,7 +27,7 @@ namespace VaultQ.CLI.Commands
         {
             var password = InputHelper.Input("password: ", true);
 
-            bool verifyPassword = await vaultManager.AuthenticateVault(password);
+            bool verifyPassword = await vaultManager.AuthenticateAsync(password, parent.Vault);
 
             if (!verifyPassword)
             {
@@ -34,7 +35,7 @@ namespace VaultQ.CLI.Commands
                 return;
             }
 
-            await vaultManager.DeleteSecret(Key);
+            await vaultManager.DeleteSecretAsync(Key);
 
         }
     }
